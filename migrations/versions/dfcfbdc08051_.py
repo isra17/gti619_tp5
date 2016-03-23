@@ -1,4 +1,4 @@
-"""empty message
+"""Create users table
 
 Revision ID: dfcfbdc08051
 Revises: None

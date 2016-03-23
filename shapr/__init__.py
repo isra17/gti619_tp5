@@ -1,6 +1,7 @@
 from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
+from flask.ext.bcrypt import Bcrypt
 from . import config
 
 # Init flask app.
@@ -9,6 +10,9 @@ app.config.from_object(config)
 
 # Init app database.
 db = SQLAlchemy(app)
+
+# Init bcrypt
+bcrypt = Bcrypt(app)
 
 # Init login manager.
 login_manager = LoginManager(app)
