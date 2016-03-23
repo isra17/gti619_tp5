@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h1>Login</h1>
+
+<form method="POST">
+  {% from "_formhelpers.html" import render_field %}
+  {{ form.csrf_token }}
+
+  {{ render_field(form.username) }}
+  {{ render_field(form.password) }}
+  <input type="submit" value="Login" />
+</form>
+
+{% endblock %}
+
