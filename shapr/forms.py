@@ -1,8 +1,9 @@
 from urllib.parse import urlparse, urljoin
 from flask_wtf import Form
 from flask import request, url_for, redirect
-from wtforms import StringField, PasswordField, HiddenField
-from wtforms.validators import DataRequired
+from wtforms import StringField, PasswordField, HiddenField, SelectField
+from wtforms.validators import DataRequired, Optional
+from . import User
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
@@ -33,4 +34,14 @@ class RedirectForm(Form):
 class LoginForm(RedirectForm):
     username = StringField('username', validators=[DataRequired()])
     password = PasswordField('password', validators=[DataRequired()])
+
+class UserForm(Form):
+    id = HiddenField()
+    username = StringField('username', validators=[])
+    password = PasswordField('password', validators=[])
+    permissions = SelectField('permissions', choices=[
+            (User.PERM_ADMIN, 'Admin'),
+            (User.PERM_SQUARE, 'Square'),
+            (User.PERM_CIRCLE, 'Circle'),
+        ], coerce=int)
 

@@ -2,15 +2,18 @@
 
 {% block content %}
 
-<h1>Login</h1>
+<h1>{{ form.username.data or "New User" }}</h1>
 
 <form method="POST" action="">
   {% from "_formhelpers.html" import render_field %}
   {{ form.csrf_token }}
 
-  {{ render_field(form.username) }}
+  {% if not form.id.data %}
+    {{ render_field(form.username) }}
+  {% endif %}
   {{ render_field(form.password) }}
-  <input type="submit" value="Login" />
+  {{ render_field(form.permissions) }}
+  <input type="submit" value="Save" />
 </form>
 
 {% endblock %}

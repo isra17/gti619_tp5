@@ -1,8 +1,8 @@
 from functools import wraps
 from flask.ext.login import login_required, login_user, current_user, logout_user
-from flask import render_template, url_for, redirect, abort
-from . import app
-from .forms import LoginForm
+from flask import render_template, url_for, redirect, abort, request
+from . import app, db
+from .forms import LoginForm, UserForm
 from .models import User
 from .auth_service import auth_by_password
 
@@ -21,12 +21,41 @@ def perm_required(permissions):
 @app.route('/')
 @login_required
 def index():
-    return 'Hello ' + current_user.username
+    """ This view redirect to a page depending on user's permissions """
+    if current_user.permissions & User.PERM_ADMIN:
+        return redirect(url_for('admin'))
+    elif current_user.permissions & User.PERM_CIRCLE:
+        return redirect(url_for('circle'))
+    elif current_user.permissions & User.PERM_SQUARE:
+        return redirect(url_for('square'))
 
 @app.route('/admin')
 @perm_required(User.PERM_ADMIN)
 def admin():
-    return 'Admin'
+    users = User.query.all()
+    return render_template('admin.html', users=users)
+
+@app.route('/user/<user_id>', methods=['GET', 'POST'])
+@perm_required(User.PERM_ADMIN)
+def edit_user(user_id):
+    user = User.query.get(user_id)
+    form = UserForm(request.form, obj=user)
+    if form.validate_on_submit():
+        form.populate_obj(user)
+        db.session.commit()
+    return render_template('user.html', form=form)
+
+@app.route('/user', methods=['GET', 'POST'])
+@perm_required(User.PERM_ADMIN)
+def create_user():
+    form = UserForm()
+    if form.validate_on_submit():
+        user = User()
+        form.populate_obj(user)
+        db.session.add(user)
+        db.session.commit()
+        return redirect(url_for('edit_user', user_id=user.id))
+    return render_template('user.html', form=form)
 
 @app.route('/circle')
 @perm_required(User.PERM_CIRCLE)
