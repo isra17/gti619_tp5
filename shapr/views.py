@@ -1,10 +1,11 @@
 from functools import wraps
 from flask.ext.login import login_required, login_user, current_user, logout_user
 from flask import render_template, url_for, redirect, abort, request
-from . import app, db
+from . import app, db, throttler
 from .forms import LoginForm, UserForm
 from .models import User
 from .auth_service import auth_by_password
+from .throttler import ratelimit
 
 def perm_required(permissions):
     def perm_required_decorator(func):
@@ -17,6 +18,18 @@ def perm_required(permissions):
 
         return decorated_view
     return perm_required_decorator
+
+def throttle_login(rlimit):
+    if rlimit.exceeded_again():
+        return throttler.on_over_limit(rlimit)
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter(User.username == form.username.data).first()
+        if user:
+            user.throttle()
+            db.session.commit()
+    return throttler.on_over_limit(rlimit)
 
 @app.route('/')
 @login_required
@@ -72,13 +85,20 @@ def circle():
 def square():
     return 'Square'
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET'])
 def login():
+    form = LoginForm()
+    return render_template('login.html', form=form)
+
+@app.route('/login', methods=['POST'])
+@ratelimit(limit=3, per=30, over_limit=throttle_login)
+def do_login():
     form = LoginForm()
     if form.validate_on_submit():
         user = auth_by_password(form.username.data, form.password.data)
-        if user:
+        if user and user.is_active():
             login_user(user)
+            throttler.get_view_rate_limit().clear()
             return form.redirect('index')
     return render_template('login.html', form=form)
 
