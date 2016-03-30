@@ -35,6 +35,9 @@ class LoginForm(RedirectForm):
     username = StringField('username', validators=[DataRequired()])
     password = PasswordField('password', validators=[DataRequired()])
 
+class PasswordForm(RedirectForm):
+    password = PasswordField('password', validators=[DataRequired()])
+
 class UserForm(Form):
     id = HiddenField()
     username = StringField('username', validators=[])
@@ -45,6 +48,7 @@ class UserForm(Form):
             (User.PERM_CIRCLE, 'Circle'),
         ], coerce=int)
     delete = SubmitField('Delete')
+    reset_password = SubmitField('Reset Password')
 
     def populate_user(self, user):
         if self.validate():

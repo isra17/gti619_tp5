@@ -1,8 +1,8 @@
 from functools import wraps
 from flask.ext.login import login_required, login_user, current_user, logout_user
-from flask import render_template, url_for, redirect, abort, request
+from flask import render_template, url_for, redirect, abort, request, flash
 from . import app, db, throttler
-from .forms import LoginForm, UserForm
+from .forms import LoginForm, UserForm, PasswordForm
 from .models import User
 from .auth_service import auth_by_password
 from .throttler import ratelimit
@@ -11,7 +11,8 @@ def perm_required(permissions):
     def perm_required_decorator(func):
         @wraps(func)
         def decorated_view(*args, **kwargs):
-            if hasattr(current_user, 'permissions') and \
+            if current_user and current_user.is_active and \
+                    hasattr(current_user, 'permissions') and \
                     current_user.permissions & permissions == permissions:
                 return func(*args, **kwargs)
             abort(401)
@@ -69,6 +70,10 @@ def edit_user(user_id):
         db.session.delete(user)
         db.session.commit()
         return redirect(url_for('admin'))
+    elif form.is_submitted() and form.reset_password.data:
+        new_password = user.reset_password()
+        flash('Temporary password is "{}"'.format(new_password))
+        db.session.commit()
     elif form.validate_on_submit():
         form.populate_user(user)
         db.session.commit()
@@ -96,11 +101,26 @@ def do_login():
     form = LoginForm()
     if form.validate_on_submit():
         user = auth_by_password(form.username.data, form.password.data)
-        if user and user.is_active():
+        if user and user.active:
             login_user(user)
             throttler.get_view_rate_limit().clear()
+            if user.password_reset:
+                flash('User must reset password to continue')
+                return redirect(url_for('reset_password', next=form.next.data))
             return form.redirect('index')
     return render_template('login.html', form=form)
+
+@app.route('/reset_password', methods=['GET', 'POST'])
+def reset_password():
+    if not current_user or not current_user.password_reset:
+        abort(401)
+    form = PasswordForm()
+    if form.validate_on_submit():
+        current_user.password = form.password.data
+        current_user.password_reset = False
+        db.session.commit()
+        return form.redirect('index')
+    return render_template('password.html', form=form)
 
 @app.route('/logout')
 def logout():

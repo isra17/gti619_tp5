@@ -14,7 +14,10 @@
   {{ render_field(form.password) }}
   {{ render_field(form.permissions) }}
   <input type="submit" value="Save" />
+  {% if user %}
   {{ form.delete() }}
+  {{ form.reset_password() }}
+  {% endif %}
 </form>
 
 {% endblock %}
