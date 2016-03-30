@@ -2,18 +2,19 @@
 
 {% block content %}
 
-<h1>{{ form.username.data or "New User" }}</h1>
+<h1>{{ (user and user.username) or "New User" }}</h1>
 
 <form method="POST" action="">
   {% from "_formhelpers.html" import render_field %}
   {{ form.csrf_token }}
 
-  {% if not form.id.data %}
+  {% if not user %}
     {{ render_field(form.username) }}
   {% endif %}
   {{ render_field(form.password) }}
   {{ render_field(form.permissions) }}
   <input type="submit" value="Save" />
+  {{ form.delete() }}
 </form>
 
 {% endblock %}

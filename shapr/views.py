@@ -35,27 +35,32 @@ def admin():
     users = User.query.all()
     return render_template('admin.html', users=users)
 
-@app.route('/user/<user_id>', methods=['GET', 'POST'])
-@perm_required(User.PERM_ADMIN)
-def edit_user(user_id):
-    user = User.query.get(user_id)
-    form = UserForm(request.form, obj=user)
-    if form.validate_on_submit():
-        form.populate_obj(user)
-        db.session.commit()
-    return render_template('user.html', form=form)
-
 @app.route('/user', methods=['GET', 'POST'])
 @perm_required(User.PERM_ADMIN)
 def create_user():
     form = UserForm()
     if form.validate_on_submit():
         user = User()
-        form.populate_obj(user)
+        form.populate_user(user)
         db.session.add(user)
         db.session.commit()
         return redirect(url_for('edit_user', user_id=user.id))
     return render_template('user.html', form=form)
+
+@app.route('/user/<user_id>', methods=['GET', 'POST'])
+@perm_required(User.PERM_ADMIN)
+def edit_user(user_id):
+    user = User.query.get(user_id)
+    form = UserForm(request.form, obj=user)
+    if form.is_submitted() and form.delete.data:
+        db.session.delete(user)
+        db.session.commit()
+        return redirect(url_for('admin'))
+    elif form.validate_on_submit():
+        form.populate_user(user)
+        db.session.commit()
+    return render_template('user.html', form=form, user=user)
+
 
 @app.route('/circle')
 @perm_required(User.PERM_CIRCLE)

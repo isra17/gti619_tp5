@@ -1,7 +1,7 @@
 from urllib.parse import urlparse, urljoin
 from flask_wtf import Form
 from flask import request, url_for, redirect
-from wtforms import StringField, PasswordField, HiddenField, SelectField
+from wtforms import StringField, PasswordField, HiddenField, SelectField, SubmitField
 from wtforms.validators import DataRequired, Optional
 from . import User
 
@@ -44,4 +44,12 @@ class UserForm(Form):
             (User.PERM_SQUARE, 'Square'),
             (User.PERM_CIRCLE, 'Circle'),
         ], coerce=int)
+    delete = SubmitField('Delete')
+
+    def populate_user(self, user):
+        if self.validate():
+            for fieldname in ['password', 'permissions', 'username']:
+                field = getattr(self, fieldname)
+                if field.data:
+                    setattr(user, fieldname, field.data)
 
