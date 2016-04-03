@@ -2,6 +2,7 @@ from flask_login import UserMixin
 from sqlalchemy import event
 import string
 import random
+import datetime
 from . import db, bcrypt
 
 def random_password(size):
@@ -24,6 +25,7 @@ class User(UserMixin, db.Model):
     password_reset = db.Column(db.Boolean, default=False, nullable=False)
 
     password_history = db.relationship("PasswordHistory")
+    events = db.relationship("Event")
 
     def __init__(self, username=None, password=None, permissions=None, **kwargs):
         self.username = username
@@ -37,7 +39,11 @@ class User(UserMixin, db.Model):
     def throttle(self):
         if self.throttled:
             self.active = False
+            self.events.append(Event(type='Locked',
+                                     info='Too many login attempts'))
         else:
+            self.events.append(Event(type='Throttled',
+                                     info='Too many login attempts'))
             self.throttled = True
 
     def reset_password(self):
@@ -45,6 +51,8 @@ class User(UserMixin, db.Model):
         self.password_reset = True
         new_password = random_password(16)
         self.password = new_password
+        self.events.append(Event(type='Password Reset',
+                                 info='Password reset by administrator'))
         return new_password
 
 @event.listens_for(User.password, 'set', retval=True)
@@ -52,6 +60,8 @@ def on_change_password(target, value, oldvalue, initiator):
     new_password = bcrypt.generate_password_hash(value)
     if oldvalue and not bcrypt.check_password_hash(oldvalue, value):
         target.password_history.append(PasswordHistory(password=oldvalue))
+        target.events.append(Event(type='Password Change',
+                                   info='Password was changed'))
     return new_password
 
 class Settings(db.Model):
@@ -68,4 +78,12 @@ class PasswordHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     password = db.Column(db.String, nullable=False)
+
+class Event(db.Model):
+    __tablename__ = 'events'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    type = db.Column(db.String, nullable=False)
+    info = db.Column(db.String, nullable=False)
 

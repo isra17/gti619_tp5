@@ -20,5 +20,16 @@
   {% endif %}
 </form>
 
+{% if user %}
+<h2>Events</h2>
+<ul>
+{% for event in user.events[::-1] %}
+<li>
+  {{ event.date }} : {{ event.type }} - {{ event.info }}
+</li>
+{% endfor %}
+</ul>
+{% endif %}
+
 {% endblock %}
 

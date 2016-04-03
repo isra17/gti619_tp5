@@ -1,10 +1,11 @@
 from functools import wraps
-from flask.ext.login import login_required, login_user, current_user, logout_user
+from flask.ext.login import login_required, login_user, current_user, \
+                            logout_user, user_logged_in
 from flask import render_template, url_for, redirect, abort, request, flash
 from . import app, db, throttler, forms
 from .forms import LoginForm, UserForm, PasswordForm, SettingsForm, \
                    UpdatePasswordForm
-from .models import User, Settings
+from .models import User, Settings, Event
 from .auth_service import auth_by_password
 from .throttler import ratelimit
 
@@ -156,3 +157,11 @@ def reset_password():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+@user_logged_in.connect_via(app)
+def on_user_logged_in(app, user=None):
+    if user is None:
+        return
+    user.events.append(Event(type='User Login',
+                             info='This user successfuly logged in'))
+    db.session.commit()
