@@ -110,6 +110,9 @@ class UserForm(Form):
                 if field.data:
                     setattr(user, fieldname, field.data)
 
+class CreateUserForm(UserForm):
+    current_password = PasswordField('Your password',
+            validators=[validate_current_password])
 
 
 class SettingsForm(Form):

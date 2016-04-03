@@ -4,7 +4,7 @@ from flask.ext.login import login_required, login_user, current_user, \
 from flask import render_template, url_for, redirect, abort, request, flash
 from . import app, db, throttler, forms
 from .forms import LoginForm, UserForm, PasswordForm, SettingsForm, \
-                   UpdatePasswordForm
+                   UpdatePasswordForm, CreateUserForm
 from .models import User, Settings, Event
 from .auth_service import auth_by_password
 from .throttler import ratelimit
@@ -61,7 +61,7 @@ def admin():
 @perm_required(User.PERM_ADMIN)
 def create_user():
     settings = Settings.query.first()
-    form = UserForm()
+    form = CreateUserForm()
     if form.validate_on_submit() and \
             forms.validate_password_form(form, settings):
         user = User()

@@ -7,7 +7,10 @@
 <form method="POST" action="">
   {% from "_formhelpers.html" import render_field %}
   {{ form.csrf_token }}
-
+  {% if form.current_password %}
+  <b>{{ render_field(form.current_password) }}</b>
+  {% endif %}
+  <hr />
   {% if not user %}
     {{ render_field(form.username) }}
   {% endif %}
