@@ -1,9 +1,10 @@
 from flask_login import UserMixin
 from sqlalchemy import event
+import sqlalchemy as sa
 import string
 import random
 import datetime
-from . import db, bcrypt
+from . import db, bcrypt, config
 
 def random_password(size):
     return ''.join(random.choice(string.ascii_letters + string.digits +
@@ -19,6 +20,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String, nullable=False)
     password = db.Column(db.String, nullable=False)
+    password_algo = db.Column(db.String, nullable=False, default=config.PASSWORD_ALGO)
     permissions = db.Column(db.Integer, default=0, nullable=False)
     active = db.Column(db.Boolean, default=True, nullable=False)
     throttled = db.Column(db.Boolean, default=False, nullable=False)
@@ -58,7 +60,8 @@ class User(UserMixin, db.Model):
 @event.listens_for(User.password, 'set', retval=True)
 def on_change_password(target, value, oldvalue, initiator):
     new_password = bcrypt.generate_password_hash(value)
-    if oldvalue and not bcrypt.check_password_hash(oldvalue, value):
+    if oldvalue != sa.orm.attributes.NO_VALUE and \
+            not bcrypt.check_password_hash(oldvalue, value):
         target.password_history.append(PasswordHistory(password=oldvalue))
         target.events.append(Event(type='Password Change',
                                    info='Password was changed'))
