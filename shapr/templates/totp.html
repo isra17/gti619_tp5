@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h1>Two-Factor Authentication</h1>
+
+<form method="POST" action="">
+  {% from "_formhelpers.html" import render_field %}
+  {{ form.csrf_token }}
+
+  {{ render_field(form.totp) }}
+  {{ form.password() }}
+  {{ form.username() }}
+  <input type="submit" />
+</form>
+
+{% endblock %}
+
+

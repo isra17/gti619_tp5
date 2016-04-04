@@ -2,9 +2,10 @@ from functools import wraps
 from flask.ext.login import login_required, login_user, current_user, \
                             logout_user, user_logged_in
 from flask import render_template, url_for, redirect, abort, request, flash
+import pyotp
 from . import app, db, throttler, forms
 from .forms import LoginForm, UserForm, PasswordForm, SettingsForm, \
-                   UpdatePasswordForm, CreateUserForm
+                   UpdatePasswordForm, CreateUserForm, TotpForm
 from .models import User, Settings, Event
 from .auth_service import auth_by_password
 from .throttler import ratelimit
@@ -125,12 +126,18 @@ def login():
     return render_template('login.html', form=form)
 
 @app.route('/login', methods=['POST'])
-@ratelimit(limit=3, per=30, over_limit=throttle_login)
+@ratelimit(limit=5, per=30, over_limit=throttle_login)
 def do_login():
     form = LoginForm()
     if form.validate_on_submit():
         user = auth_by_password(form.username.data, form.password.data)
         if user and user.active:
+            if user.totp_key:
+                totp_form = TotpForm()
+                if not totp_form.validate_on_submit() \
+                        or not totp_form.validate_totp_for_user(user):
+                    return render_template('totp.html', form=totp_form)
+
             login_user(user)
             throttler.get_view_rate_limit().clear()
             if user.password_reset:
@@ -152,6 +159,18 @@ def reset_password():
         db.session.commit()
         return form.redirect('index')
     return render_template('password.html', form=form)
+
+@app.route('/totp/setup', methods=['GET', 'POST'])
+@login_required
+def setup_totp():
+    if current_user.totp_key is None or request.method == 'POST':
+        current_user.totp_key = pyotp.random_base32()
+        current_user.events.append(Event(type="New TFA key",
+                                         info="A new Two-Factor Authentication "\
+                                              "key was generated"))
+        db.session.commit()
+    totp = pyotp.TOTP(current_user.totp_key)
+    return render_template('setup_totp.html', totp=totp, user=current_user)
 
 @app.route('/logout')
 def logout():

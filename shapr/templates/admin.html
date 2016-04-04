@@ -3,6 +3,7 @@
 {% block content %}
 
 <h1>Admin</h1>
+[ <a href="{{ url_for('setup_totp') }}">Two-Factor Authentication Setup</a> ]
 <h2>Settings</h2>
 <form method="POST" action="">
   {% from "_formhelpers.html" import render_field %}

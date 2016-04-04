@@ -21,6 +21,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String, nullable=False)
     password = db.Column(db.String, nullable=False)
     password_algo = db.Column(db.String, nullable=False, default=config.PASSWORD_ALGO)
+    totp_key = db.Column(db.String, nullable=True)
     permissions = db.Column(db.Integer, default=0, nullable=False)
     active = db.Column(db.Boolean, default=True, nullable=False)
     throttled = db.Column(db.Boolean, default=False, nullable=False)

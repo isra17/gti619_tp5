@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h1>Two-Factor Authentication Setup</h1>
+<h2>New TOTP Code:</h2>
+<img src="http://chart.apis.google.com/chart?cht=qr&chs=250x250&chl={{totp.provisioning_uri(user.username)|e}}" />
+<pre>{{ totp.secret }}</pre>
+<form method="POST" action="">
+  <input type="submit" value="Regenerate" />
+</form>
+{% endblock %}
+

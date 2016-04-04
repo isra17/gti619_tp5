@@ -5,11 +5,20 @@ from flask import request, url_for, redirect
 from wtforms import StringField, PasswordField, HiddenField, SelectField, \
                     SubmitField, BooleanField, IntegerField, validators
 from wtforms.validators import DataRequired, Optional, ValidationError
+import pyotp
 import string
 from .models import User, Settings
 from . import bcrypt
 
 __char_groups = [string.ascii_lowercase, string.ascii_uppercase, string.digits]
+
+class TotpValidator:
+    def __init__(self, totp):
+        self.totp = totp
+
+    def __call__(self, form, field):
+        if not self.totp.verify(field.data):
+            raise ValidationError('Code is invalid')
 
 def validate_password_form(form, settings, user=None):
     if not form.password.data:
@@ -114,8 +123,17 @@ class CreateUserForm(UserForm):
     current_password = PasswordField('Your password',
             validators=[validate_current_password])
 
-
 class SettingsForm(Form):
     complexe_password = BooleanField('Require complexe password')
     password_len = IntegerField('Minimum password length')
     password_history = IntegerField('Password History')
+
+class TotpForm(RedirectForm):
+    totp = IntegerField('TOTP Code', validators=[DataRequired()])
+    username = HiddenField(validators=[DataRequired()])
+    password = HiddenField(validators=[DataRequired()])
+
+    def validate_totp_for_user(self, user):
+        totp = pyotp.TOTP(user.totp_key)
+        return self.totp.validate(self, [TotpValidator(totp)])
+
