@@ -8,7 +8,7 @@
   6. Créer les utilisateurs initiaux avec `python manage.py seed`.
 
 ## Exécution
-Rouler le serveur avec `python manage.py runserver`.
+Rouler le serveur avec `DEBUG=1 python manage.py runserver`.
 Naviguer sur [http://localhost:5000](http://localhost:5000).
 Connectez-vous avez l'un des utilisateurs suivant:
   * `Administrateur` / `Administrateur`
