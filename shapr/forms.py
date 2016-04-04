@@ -127,6 +127,9 @@ class SettingsForm(Form):
     complexe_password = BooleanField('Require complexe password')
     password_len = IntegerField('Minimum password length')
     password_history = IntegerField('Password History')
+    login_throttle_count = IntegerField('Password throttling limit')
+    login_throttle_period = IntegerField('Password throttling period (s)')
+    password_expiry = IntegerField('Password expiration period (s)')
 
 class TotpForm(RedirectForm):
     totp = IntegerField('TOTP Code', validators=[DataRequired()])

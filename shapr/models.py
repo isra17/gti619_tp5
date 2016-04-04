@@ -26,6 +26,7 @@ class User(UserMixin, db.Model):
     active = db.Column(db.Boolean, default=True, nullable=False)
     throttled = db.Column(db.Boolean, default=False, nullable=False)
     password_reset = db.Column(db.Boolean, default=False, nullable=False)
+    last_password_set_at = db.Column(db.DateTime)
 
     password_history = db.relationship("PasswordHistory")
     events = db.relationship("Event")
@@ -35,6 +36,15 @@ class User(UserMixin, db.Model):
         self.permissions = permissions
         if password:
             self.password = password
+
+    def check_password_expiration(self, settings):
+        if self.last_password_set_at is None or settings.password_expiry <= 0:
+            return
+
+        if datetime.datetime.utcnow() - self.last_password_set_at > \
+                datetime.timedelta(seconds=settings.password_expiry):
+            self.password_reset = True
+            db.session.commit()
 
     def is_active(self):
         return self.active and not self.password_reset
@@ -66,6 +76,7 @@ def on_change_password(target, value, oldvalue, initiator):
         target.password_history.append(PasswordHistory(password=oldvalue))
         target.events.append(Event(type='Password Change',
                                    info='Password was changed'))
+    target.last_password_set_at = datetime.datetime.utcnow()
     return new_password
 
 class Settings(db.Model):
@@ -75,6 +86,11 @@ class Settings(db.Model):
     complexe_password = db.Column(db.Boolean, default=True, nullable=False)
     password_len = db.Column(db.Integer, default=8, nullable=False)
     password_history = db.Column(db.Integer, default=1, nullable=False)
+
+    login_throttle_count = db.Column(db.Integer, default=5, nullable=False)
+    login_throttle_period = db.Column(db.Integer, default=30, nullable=False)
+
+    password_expiry = db.Column(db.Integer, default=0, nullable=False)
 
 class PasswordHistory(db.Model):
     __tablename__ = 'password_history'

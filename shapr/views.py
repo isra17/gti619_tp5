@@ -126,25 +126,31 @@ def login():
     return render_template('login.html', form=form)
 
 @app.route('/login', methods=['POST'])
-@ratelimit(limit=5, per=30, over_limit=throttle_login)
 def do_login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = auth_by_password(form.username.data, form.password.data)
-        if user and user.active:
-            if user.totp_key:
-                totp_form = TotpForm()
-                if not totp_form.validate_on_submit() \
-                        or not totp_form.validate_totp_for_user(user):
-                    return render_template('totp.html', form=totp_form)
+    settings = Settings.query.first()
+    @ratelimit(limit=settings.login_throttle_count, \
+               per=settings.login_throttle_period, \
+               over_limit=throttle_login)
+    def do_throttled_login():
+        form = LoginForm()
+        if form.validate_on_submit():
+            user = auth_by_password(form.username.data, form.password.data)
+            if user and user.active:
+                if user.totp_key:
+                    totp_form = TotpForm()
+                    if not totp_form.validate_on_submit() \
+                            or not totp_form.validate_totp_for_user(user):
+                        return render_template('totp.html', form=totp_form)
 
-            login_user(user)
-            throttler.get_view_rate_limit().clear()
-            if user.password_reset:
-                flash('User must reset password to continue')
-                return redirect(url_for('reset_password', next=form.next.data))
-            return form.redirect('index')
-    return render_template('login.html', form=form)
+                login_user(user)
+                throttler.get_view_rate_limit().clear()
+                user.check_password_expiration(settings)
+                if user.password_reset:
+                    flash('User must reset password to continue')
+                    return redirect(url_for('reset_password', next=form.next.data))
+                return form.redirect('index')
+        return render_template('login.html', form=form)
+    return do_throttled_login()
 
 @app.route('/reset_password', methods=['GET', 'POST'])
 def reset_password():
@@ -153,7 +159,7 @@ def reset_password():
     settings = Settings.query.first()
     form = PasswordForm()
     if form.validate_on_submit() and \
-            validate_password_form(form, settings, current_user):
+            forms.validate_password_form(form, settings, current_user):
         current_user.password = form.password.data
         current_user.password_reset = False
         db.session.commit()

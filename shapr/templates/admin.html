@@ -4,6 +4,7 @@
 
 <h1>Admin</h1>
 [ <a href="{{ url_for('setup_totp') }}">Two-Factor Authentication Setup</a> ]
+
 <h2>Settings</h2>
 <form method="POST" action="">
   {% from "_formhelpers.html" import render_field %}
@@ -12,6 +13,9 @@
   {{ render_field(settings_form.password_len) }}
   {{ render_field(settings_form.complexe_password) }}
   {{ render_field(settings_form.password_history) }}
+  {{ render_field(settings_form.login_throttle_count) }}
+  {{ render_field(settings_form.login_throttle_period) }}
+  {{ render_field(settings_form.password_expiry) }}
   <input type="submit" value="Save" />
 </form>
 
