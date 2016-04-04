@@ -25,7 +25,7 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
 
-    bind = op.bulk_insert(table, [{'password_len':8, 'complexe_password': 1}])
+    bind = op.bulk_insert(table, [{'password_len':8, 'complexe_password': True}])
     ### end Alembic commands ###
 
 
