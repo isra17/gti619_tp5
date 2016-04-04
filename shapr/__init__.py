@@ -2,6 +2,7 @@ from flask import Flask
 from flask.ext.sqlalchemy import SQLAlchemy
 from flask.ext.login import LoginManager
 from flask.ext.bcrypt import Bcrypt
+from flask_sslify import SSLify
 from . import config
 
 # Init flask app.
@@ -13,6 +14,9 @@ db = SQLAlchemy(app)
 
 # Init bcrypt
 bcrypt = Bcrypt(app)
+
+# Force ssl
+sslify = SSLify(app)
 
 # Init login manager.
 login_manager = LoginManager(app)
