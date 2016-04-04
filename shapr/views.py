@@ -39,11 +39,11 @@ def throttle_login(rlimit):
 @login_required
 def index():
     """ This view redirect to a page depending on user's permissions """
-    if current_user.permissions & User.PERM_ADMIN:
+    if current_user.permissions == User.PERM_ADMIN:
         return redirect(url_for('admin'))
-    elif current_user.permissions & User.PERM_CIRCLE:
+    elif current_user.permissions == User.PERM_CIRCLE:
         return redirect(url_for('circle'))
-    elif current_user.permissions & User.PERM_SQUARE:
+    elif current_user.permissions == User.PERM_SQUARE:
         return redirect(url_for('square'))
 
 @app.route('/admin', methods=['GET', 'POST'])
@@ -113,12 +113,12 @@ def update_password(user_id):
 @app.route('/circle')
 @perm_required(User.PERM_CIRCLE)
 def circle():
-    return 'Circle'
+    return render_template('circle.html')
 
 @app.route('/square')
 @perm_required(User.PERM_SQUARE)
 def square():
-    return 'Square'
+    return render_template('square.html')
 
 @app.route('/login', methods=['GET'])
 def login():
